@@ -63,3 +63,67 @@ class NomadApi:
         except requests.exceptions.RequestException as error:
             print("Error stopping a job:", error)
             raise
+
+    def deleteJob(self, jobName):
+        try:
+            response = requests.delete(
+                "",
+                headers={
+                    "X-Nomad-Token": self.token,
+                    "Content-Type": "application/json",
+                },
+            )
+            if not response.ok:
+                raise Exception("Network response was not ok")
+            return response.json
+        except requests.exceptions.RequestException as error:
+            print("Error deleting a job:", error)
+            raise
+
+    def ensure_namespaces(self, name):
+        try:
+            response = requests.get(
+                f"{self.url}/namespaces", headers={"X-Nomad-Token": self.token}
+            )
+
+            if not response.ok:
+                raise Exception(f"Network response was not ok: {response.status_text}")
+
+            response_body = response.text
+
+            try:
+                data = response.json()
+            except ValueError as parse_error:
+                print("Error parsing JSON response:", response_body)
+                raise parse_error
+
+            namespaces = [item["Name"] for item in data]
+            return name in namespaces
+
+        except requests.exceptions.RequestException as error:
+            print("Error fetching namespaces:", error)
+            raise error
+
+    def createNamespace(self, name):
+        try:
+            namespaceConfig = {"Name": name}
+            response = requests.post(
+                f"{self.url}/namespace/{name}",
+                headers={
+                    "X-Nomad-Token": self.token,
+                    "Content-Type": "application/json",
+                },
+                json=namespaceConfig,
+            )
+
+            if response.status_code != 200:
+                response.raise_for_status()
+
+            if response.text.strip():
+                return response.json()
+            else:
+                print("Warning: Empty response body.")
+                return f"namespace {name} has been created"
+        except requests.exceptions.RequestException as error:
+            print(f"Error creating namespace: {error}")
+            raise
