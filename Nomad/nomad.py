@@ -127,3 +127,46 @@ class NomadApi:
         except requests.exceptions.RequestException as error:
             print(f"Error creating namespace: {error}")
             raise
+
+    def deleteNamespace(self, name):
+        try:
+            response = requests.delete(
+                f"{self.url}/namespace/{name}",
+                headers={
+                    "X-Nomad-Token": self.token,
+                    "Content-Type": "application/json",
+                },
+            )
+            if response.status_code != 200:
+                response.raise_for_status()
+
+            if response.text.strip():
+                return response.json()
+            else:
+                print("Warning: Empty response body.")
+                return f"namespace {name} has been deleted"
+        except requests.exceptions.RequestException as error:
+            print(f"Error deleting namespace: {error}")
+            raise
+
+    def createAndRegisterNomadVolume(self, volumeId, nomadPayload):
+        try:
+            response = requests.put(
+                f"${self.url}/volume/csi/${volumeId}/create",
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Nomad-Token": self.token,
+                },
+                json=nomadPayload,
+            )
+            if response.status_code != 200:
+                response.raise_for_status()
+
+            if response.text.strip():
+                return response.json()
+            else:
+                print("Warning: Empty response body.")
+                return f"volume {volumeId} has been created"
+        except requests.exceptions.RequestException as error:
+            print(f"Error creating volume: {error}")
+            raise
